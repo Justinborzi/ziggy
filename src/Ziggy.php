@@ -155,6 +155,7 @@ class Ziggy implements JsonSerializable
     {
         return [
             'url' => $this->url,
+            'previous' => method_exists(app('url'), 'previous') ? url()->previous() : null,
             'port' => parse_url($this->url)['port'] ?? null,
             'defaults' => method_exists(app('url'), 'getDefaultParameters')
                 ? app('url')->getDefaultParameters()
