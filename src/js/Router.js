@@ -125,6 +125,46 @@ export default class Router extends String {
         // Use weak equality because all values in the current window URL will be strings
         return Object.entries(params).every(([key, value]) => routeParams[key] == value);
     }
+     /**
+     * Get the name of the route matching the previous window URL, or, given a route name
+     * and parameters, check if the previous window URL and parameters match that route.
+     *
+     * @example
+     * // at URL https://ziggy.dev/posts/4 with 'posts.show' route 'posts/{post}'
+     * route().previous(); // 'posts.show'
+     * route().previous('posts.index'); // false
+     * route().previous('posts.show'); // true
+     * route().previous('posts.show', { post: 1 }); // false
+     * route().previous('posts.show', { post: 4 }); // true
+     *
+     * @param {String} [name] - Route name to check.
+     * @param {(String|Number|Array|Object)} [params] - Route parameters.
+     * @return {(Boolean|String|undefined)}
+     */
+    previous(name, params) {
+        const { name: current, params: currentParams, query, route } = this._unresolve(this._config.previous);
+
+        // If a name wasn't passed, return the name of the current route
+        if (!name) return current;
+
+        // Test the passed name against the current route, matching some
+        // basic wildcards, e.g. passing `events.*` matches `events.show`
+        const match = new RegExp(`^${name.replace(/\./g, '\\.').replace(/\*/g, '.*')}$`).test(current);
+
+        if ([null, undefined].includes(params) || !match) return match;
+
+        const routeObject = new Route(current, route, this._config);
+
+        params = this._parse(params, routeObject);
+        const routeParams = { ...currentParams, ...query };
+
+        // If the previous window URL has no route parameters, and the passed parameters are empty, return true
+        if (Object.values(params).every(p => !p) && !Object.values(routeParams).some(v => v !== undefined)) return true;
+
+        // Check that all passed parameters match their values in the previous window URL
+        // Use weak equality because all values in the previous window URL will be strings
+        return Object.entries(params).every(([key, value]) => routeParams[key] == value);
+    }
 
     /**
      * Get an object representing the current location (by default this will be
